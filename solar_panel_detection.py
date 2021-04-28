@@ -17,7 +17,7 @@ import geopandas as gpd
 import pandas as pd
 
 
-base_dir = r'C:\garrett_workspace\PROJECTS\github\Semantic_Segmentation'
+base_dir = os.path.realpath(__file__)
 os.chdir(base_dir)
 
 from bg_geo_tools.bg_geo_tools import *
@@ -34,6 +34,7 @@ train_tiles_dir = train_dir+'\\'+'tiles'
 gdal_retile_path = base_dir+'\\bg_geo_tools\\gdal_retile.py'
 predictions_dir = base_dir+'\\predictions'
 temp_dir = predictions_dir+'\\temp'
+shapes_dir = base_dir+'\\shapes'
 
 tile_size = 256 # images will be tiled to tile_size x tile_size pixels
 
@@ -348,7 +349,7 @@ footprints rather than manually having to trace buildings.
 '''
 
 
-buildings = gpd.read_file(base_dir+'\\osm_building_footprints.shp')
+buildings = gpd.read_file(shapes_dir+'\\osm_building_footprints.shp')
 
 roof_top_panels = gpd.sjoin(all_positives, buildings, how='inner', op='within')
 
