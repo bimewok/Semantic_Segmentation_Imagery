@@ -339,7 +339,7 @@ for i in range(len(test_files)):
 all_positives.crs = crs
 
 
-all_positives.to_file(predictions_dir+'\\all_positives.shp')
+all_positives.to_file(predictions_dir+'\\all_positives.geojson', driver='GeoJSON')
 
 
 #====================== remove positives that are not on buildings ===========
@@ -354,6 +354,6 @@ buildings = gpd.read_file(shapes_dir+'\\osm_building_footprints.shp')
 roof_top_panels = gpd.sjoin(all_positives, buildings, how='inner', op='within')
 
 roof_top_panels = roof_top_panels[['class', 'geometry']].to_file(
-    predictions_dir+'\\rooftop.shp'
+    predictions_dir+'\\rooftop.geojson', driver='GeoJSON'
     )
  
