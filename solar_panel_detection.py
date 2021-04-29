@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr 27 08:21:49 2021
+Created on Tue Apr 27 18:21:49 2021
 
 @author: bimew
 """
@@ -15,9 +15,11 @@ import scipy.ndimage
 from matplotlib import pyplot as plt
 import geopandas as gpd
 import pandas as pd
+import zipfile
 
+print(os.getcwd())
 
-base_dir = os.path.realpath(__file__)
+base_dir = r'C:\garrett_workspace\PROJECTS\github\tt\t'
 os.chdir(base_dir)
 
 from bg_geo_tools.bg_geo_tools import *
@@ -111,8 +113,11 @@ exisit in the tile folders and then tiles the original imagery and label rasters
 for folder in [labels_tiles_dir, test_tiles_dir, train_tiles_dir]:
     for file in glob.glob(folder+'\\'+'*.*'):
         os.remove(file)
-                                        
-                                           
+
+for folder in [labels_dir, test_dir, train_dir]:                                        
+    for file in glob.glob(folder+'\\'+'*.zip*'):
+        with zipfile.ZipFile(file, 'r') as zip_ref:
+            zip_ref.extractall(folder)                                           
 
 train_to_tile = []
 test_to_tile = []
@@ -203,11 +208,9 @@ test = test / 255
 
 #====================== build model ==========================================
 
-TRAIN_LENGTH = len(train)
-BATCH_SIZE = 8
-BUFFER_SIZE = 1000
-STEPS_PER_EPOCH = TRAIN_LENGTH // BATCH_SIZE
-OUTPUT_CHANNELS = 3
+
+
+
 base_model = tf.keras.applications.MobileNetV2(input_shape=[256, 256, 3], include_top=False)
 layer_names = [
     'block_1_expand_relu',   # 64x64
@@ -233,18 +236,18 @@ up_stack = [
 def unet_model(output_channels):
   inputs = tf.keras.layers.Input(shape=[256, 256, 3])
 
-  # Downsampling through the model
+  
   skips = down_stack(inputs)
   x = skips[-1]
   skips = reversed(skips[:-1])
 
-  # Upsampling and establishing the skip connections
+  
   for up, skip in zip(up_stack, skips):
     x = up(x)
     concat = tf.keras.layers.Concatenate()
     x = concat([x, skip])
 
-  # This is the last layer of the model
+  
   last = tf.keras.layers.Conv2DTranspose(
       output_channels, 3, strides=2,
       padding='same')  #64x64 -> 128x128
@@ -255,7 +258,9 @@ def unet_model(output_channels):
 
 
 
-model = unet_model(OUTPUT_CHANNELS)
+model = unet_model(3)
+
+batch_size = 8
 model.compile(optimizer='adam',
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
@@ -264,7 +269,7 @@ model.compile(optimizer='adam',
 
 
 es = tf.keras.callbacks.EarlyStopping(
-    monitor="val_loss",
+    monitor="loss",
     min_delta=0,
     patience=4,
     verbose=0,
@@ -274,12 +279,11 @@ es = tf.keras.callbacks.EarlyStopping(
 )
 
 
-EPOCHS = 200
 
-model_history = model.fit(train, labels, epochs=EPOCHS,
-                          steps_per_epoch=STEPS_PER_EPOCH,
-                          callbacks=es,
-                          validation_split = 0.21)
+tf.keras.utils.plot_model(model, show_shapes=True)
+model_history = model.fit(train, labels, epochs=200,
+                          steps_per_epoch=int(len(train) / batch_size),
+                          callbacks=es)
 
 keras.models.save_model(model, base_dir+'\\model')
 
