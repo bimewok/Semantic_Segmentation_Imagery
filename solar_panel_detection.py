@@ -19,7 +19,7 @@ import zipfile
 
 print(os.getcwd())
 
-base_dir = r'C:\garrett_workspace\PROJECTS\github\tt\t'
+base_dir = r'C:\garrett_workspace\PROJECTS\github\t'
 os.chdir(base_dir)
 
 from bg_geo_tools.bg_geo_tools import *
@@ -258,7 +258,7 @@ def unet_model(output_channels):
 
 
 
-model = unet_model(3)
+model = unet_model(2)
 
 batch_size = 8
 model.compile(optimizer='adam',
@@ -269,7 +269,7 @@ model.compile(optimizer='adam',
 
 
 es = tf.keras.callbacks.EarlyStopping(
-    monitor="loss",
+    monitor="val_accuracy",
     min_delta=0,
     patience=4,
     verbose=0,
@@ -283,7 +283,7 @@ es = tf.keras.callbacks.EarlyStopping(
 tf.keras.utils.plot_model(model, show_shapes=True)
 model_history = model.fit(train, labels, epochs=200,
                           steps_per_epoch=int(len(train) / batch_size),
-                          callbacks=es)
+                          callbacks=es, validation_split=0.15)
 
 keras.models.save_model(model, base_dir+'\\model')
 
