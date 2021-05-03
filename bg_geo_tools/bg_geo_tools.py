@@ -92,6 +92,8 @@ def load_rasters_to_array(directory, file_type, num_bands, tile_size):
     
     file_list = []
     data = []
+    
+    
     for file in glob.glob(directory+'\\'+'*.{}'.format(file_type)):
   
         img = gdal.Open(file)
@@ -102,8 +104,22 @@ def load_rasters_to_array(directory, file_type, num_bands, tile_size):
         arr = np.dstack(bands)
         if arr.shape == (tile_size, tile_size, num_bands):
             file_list.append(file)
-            data.append(arr)
+            
         img = None
+    
+    file_list.sort()
+    for file in file_list:
+  
+        img = gdal.Open(file)
+        bands = []
+        for i in range(1, num_bands+1):
+            band = np.array(img.GetRasterBand(i).ReadAsArray())
+            bands.append(band)
+        arr = np.dstack(bands)
+
+        data.append(arr)
+        img = None
+    
     return np.array(data, dtype=np.int32), file_list
 
 

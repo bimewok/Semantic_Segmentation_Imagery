@@ -59,11 +59,11 @@ you can save a lot of time and post-processing by doing the rasterize operation
 on each training area.
 '''
 
-label_rast_path = labels_dir+'\\labelsN.tif'
+label_rast_path = labels_dir+'\\08.tif'
 cell_size = 0.3
 extent_coords = '565500.0 4189500.0 567000.0 4191000.0'
-labels_poly_path = train_dir+'\\solar_panels_poly_north.shp'
-labels_poly_name = 'solar_panels_poly_north'
+labels_poly_path = train_dir+'\\08_poly_panels.shp'
+labels_poly_name = '08_poly_panels'
 class_label_field = 'class'
 
 gdal_string = ('gdal_rasterize -l '
@@ -80,11 +80,12 @@ gdal_string = ('gdal_rasterize -l '
 
 os.system(gdal_string)
 time.sleep(5)
+
                                            
-label_rast_path = labels_dir+'\\labelsS.tif'
+label_rast_path = labels_dir+'\\09.tif'
 extent_coords = '547500.0 4174500.0 549000.0 4176000.0'
-labels_poly_path = train_dir+'\\solar_panels_poly_south.shp'
-labels_poly_name = 'solar_panels_poly_south'
+labels_poly_path = train_dir+'\\09_poly_panels.shp'
+labels_poly_name = '09_poly_panels'
 
 
 gdal_string = ('gdal_rasterize -l '
@@ -98,6 +99,55 @@ gdal_string = ('gdal_rasterize -l '
                                            extent_coords=extent_coords,
                                            labels_poly_path=labels_poly_path,
                                            label_rast_path=label_rast_path)                                            
+                                           
+os.system(gdal_string)                                           
+                                           
+                                           
+time.sleep(5)
+           
+                                
+label_rast_path = labels_dir+'\\15.tif'
+extent_coords = '565500.0 4147500.0 567000.0 4149000.0'
+labels_poly_path = train_dir+'\\15_poly_panels.shp'
+labels_poly_name = '15_poly_panels'
+
+
+gdal_string = ('gdal_rasterize -l '
+               '{labels_poly_name} -a {class_label_field} '
+               '-tr {cell_size} {cell_size} '
+               '-a_nodata 2.0 -te {extent_coords} '
+               '-ot UInt16 -of GTiff {labels_poly_path} '
+               '{label_rast_path}').format(labels_poly_name=labels_poly_name,
+                                           class_label_field=class_label_field, 
+                                           cell_size=cell_size,
+                                           extent_coords=extent_coords,
+                                           labels_poly_path=labels_poly_path,
+                                           label_rast_path=label_rast_path)                                            
+                                           
+os.system(gdal_string)                                            
+time.sleep(5)
+
+                                           
+label_rast_path = labels_dir+'\\16.tif'
+extent_coords = '565500.0 4146000.0 567000.0 4147500.0'
+labels_poly_path = train_dir+'\\16_poly_panels.shp'
+labels_poly_name = '16_poly_panels'
+
+
+gdal_string = ('gdal_rasterize -l '
+               '{labels_poly_name} -a {class_label_field} '
+               '-tr {cell_size} {cell_size} '
+               '-a_nodata 2.0 -te {extent_coords} '
+               '-ot UInt16 -of GTiff {labels_poly_path} '
+               '{label_rast_path}').format(labels_poly_name=labels_poly_name,
+                                           class_label_field=class_label_field, 
+                                           cell_size=cell_size,
+                                           extent_coords=extent_coords,
+                                           labels_poly_path=labels_poly_path,
+                                           label_rast_path=label_rast_path)                                            
+                                           
+os.system(gdal_string)                                           
+                                        
                                            
 os.system(gdal_string)                                           
                                            
@@ -205,6 +255,10 @@ labels = labels.reshape(len(labels), 256, 256)
 train = train / 255
 test = test / 255
 
+train = np.where(train==np.nan,0,train)
+test = np.where(test==np.nan,0,test)
+train = np.where(train==np.inf,0,train)
+test = np.where(test==np.inf,0,test)
 
 #====================== build model ==========================================
 
@@ -336,8 +390,8 @@ for i in range(len(test_files)):
         all_positives = all_positives.append(shp, ignore_index=True)
     for file in glob.glob(temp_dir+'\\'+'*.*'):
         os.remove(file)
-    if at % 100 == 0:
-        print(len(test_files)-at,'to go')
+    if at % 200 == 0:
+        print(len(test_files)-at,'test tiles to go')
     at += 1
 
 all_positives.crs = crs
@@ -355,7 +409,7 @@ footprints rather than manually having to trace buildings.
 
 buildings = gpd.read_file(shapes_dir+'\\osm_building_footprints.shp')
 
-roof_top_panels = gpd.sjoin(all_positives, buildings, how='inner', op='within')
+roof_top_panels = gpd.sjoin(all_positives, buildings, how='inner', op='intersects')
 
 roof_top_panels = roof_top_panels[['class', 'geometry']].to_file(
     predictions_dir+'\\rooftop.geojson', driver='GeoJSON'
